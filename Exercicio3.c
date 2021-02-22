@@ -1,5 +1,10 @@
 /*Programa Multithread para calcular as potências de 2 elevado a n, onde n varia de 0 a 10, uma thread
-calcula a potencia, enqanto a outra soma os resultados das potencias.*/
+calcula a potência, enquanto a outra soma os resultados das potencias.*/
+
+/*O programa consta com um erro, após efetur as tarefas necessárias, a thread Calc finaliza sua execução,
+assim passando a vez para a Thread Sum, e a finalizando. O erro constando no programa, é que em algumas
+execuções ele não passa a ultima vez pela Thread Sum, assim não somando o último resultado, ficando com o 
+resultado de 1023, ao invés de 2047*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,6 +16,7 @@ typedef struct{
     long int sum;
     int result;
     int control;
+    pthread_t threadSum_id, threadCalc_id;
 }StructCalc;
 
 void* calcPower(void *ptrStruct){
@@ -21,14 +27,12 @@ void* calcPower(void *ptrStruct){
         if(ptr->control == 0){
             ptr->result = pow(2,ptr->n);
             ptr->control = 1;
-            printf("\nCALC - Valor de N : %d",ptr->n);
-            printf("\nCALC - Resultado da potencia de 2 a %d: %d",ptr->n,ptr->result);
-            printf("\nCALC - Valor do controle: %d",ptr->control);
-            ptr->n++;
             sched_yield();
+            ptr->n++;
         }else
             sched_yield();
     }
+    printf("\nFinaliza a Thread Calc\n");
     pthread_exit(NULL);
 }
 
@@ -39,13 +43,11 @@ void* sumPower(void *ptrStruct){
         if(ptr->control == 1){
             ptr->sum += ptr->result;
             ptr->control = 0;
-            printf("\nSUM - Valor de N: %d",ptr->n);
-            printf("\nSUM - Valor da Soma: %ld", ptr->sum);
-            printf("\nSUM - Valor do controle: %d", ptr->control);
             sched_yield();
         }else
             sched_yield();
     }
+    printf("\nFinaliza a Thread Sum\n");
     pthread_exit(NULL);
 }
 
@@ -71,6 +73,9 @@ int start(){
         printf("Erro ao iniciar a Thread Sum");
         exit(EXIT_FAILURE);
     }
+
+    str.threadCalc_id = threadCalc_id;
+    str.threadSum_id = threadSum_id;
 
     pthread_join(threadCalc_id,thread_return);
     pthread_join(threadSum_id,thread_return);
